@@ -25,7 +25,7 @@ class _RodWidgetState extends State<RodWidget> {
   final double _maxBeadPosition = 160.0; // Bottom position
   final double _beadSpacing = 4.0; // Spacing between beads
   final double _heavenlyMinPosition = 8.0; // Heavenly bead top position
-  final double _heavenlyMaxPosition = 160.0; // Heavenly bead bottom position
+  final double _heavenlyMaxPosition = 80.0; // Heavenly bead bottom position
 
   @override
   void initState() {
