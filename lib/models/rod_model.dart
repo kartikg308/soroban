@@ -1,4 +1,5 @@
 import 'bead_model.dart';
+import 'bead_position_calculator.dart';
 
 /// Model representing a single rod in the soroban
 class RodModel {
@@ -103,6 +104,36 @@ class RodModel {
     for (final bead in earthlyBeads) {
       bead.dispose();
     }
+  }
+
+  /// Updates bead positions using the position calculator
+  void updateBeadPositions(BeadPositionCalculator calculator) {
+    // Update heavenly bead position
+    final heavenlyTargetPos = calculator.getTargetPosition(BeadType.heavenly, 0, heavenlyBead.position);
+    heavenlyBead.updateOffset(heavenlyTargetPos);
+
+    // Update earthly bead positions
+    for (int i = 0; i < earthlyBeads.length; i++) {
+      final earthlyTargetPos = calculator.getTargetPosition(BeadType.earthly, i, earthlyBeads[i].position);
+      earthlyBeads[i].updateOffset(earthlyTargetPos);
+    }
+  }
+
+  /// Validates all bead positions are within bounds
+  bool validateBeadPositions(BeadPositionCalculator calculator) {
+    // Check heavenly bead
+    if (!calculator.isPositionValid(BeadType.heavenly, heavenlyBead.currentOffset)) {
+      return false;
+    }
+
+    // Check earthly beads
+    for (final bead in earthlyBeads) {
+      if (!calculator.isPositionValid(BeadType.earthly, bead.currentOffset)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /// Creates a copy of this rod model with optional parameter overrides

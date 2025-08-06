@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soroban/models/models.dart';
 
@@ -278,6 +279,54 @@ void main() {
 
       // Test that dispose doesn't throw
       expect(() => rod.dispose(), returnsNormally);
+    });
+  });
+
+  group('RodModel Position Management', () {
+    late RodModel rod;
+    late BeadPositionCalculator calculator;
+
+    setUp(() {
+      rod = RodModel.create(index: 0);
+      const dimensions = RodDimensions(width: 100, height: 200, reckoningBarY: 80, heavenlyBeadRadius: 15, earthlyBeadRadius: 12, beadSpacing: 10);
+      calculator = BeadPositionCalculator(dimensions);
+    });
+
+    test('should update bead positions correctly', () {
+      // Set some beads to active
+      rod.heavenlyBead.setPosition(BeadPosition.active);
+      rod.earthlyBeads[0].setPosition(BeadPosition.active);
+      rod.earthlyBeads[1].setPosition(BeadPosition.inactive);
+
+      // Update positions using calculator
+      rod.updateBeadPositions(calculator);
+
+      // Check that positions were updated correctly
+      expect(rod.heavenlyBead.currentOffset, calculator.getHeavenlyActivePosition());
+      expect(rod.earthlyBeads[0].currentOffset, calculator.getEarthlyActivePosition(0));
+      expect(rod.earthlyBeads[1].currentOffset, calculator.getEarthlyInactivePosition(1));
+    });
+
+    test('should validate bead positions correctly', () {
+      // Set valid positions
+      rod.heavenlyBead.updateOffset(calculator.getHeavenlyActivePosition());
+      for (int i = 0; i < rod.earthlyBeads.length; i++) {
+        rod.earthlyBeads[i].updateOffset(calculator.getEarthlyInactivePosition(i));
+      }
+
+      expect(rod.validateBeadPositions(calculator), true);
+
+      // Set invalid position for heavenly bead
+      rod.heavenlyBead.updateOffset(const Offset(5, 5)); // Outside bounds
+      expect(rod.validateBeadPositions(calculator), false);
+
+      // Reset to valid position
+      rod.heavenlyBead.updateOffset(calculator.getHeavenlyActivePosition());
+      expect(rod.validateBeadPositions(calculator), true);
+
+      // Set invalid position for earthly bead
+      rod.earthlyBeads[0].updateOffset(const Offset(5, 5)); // Outside bounds
+      expect(rod.validateBeadPositions(calculator), false);
     });
   });
 }

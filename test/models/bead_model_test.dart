@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:soroban/models/models.dart';
 
@@ -116,6 +115,94 @@ void main() {
 
       // Test that dispose doesn't throw when no animation controller is set
       expect(() => bead.dispose(), returnsNormally);
+    });
+  });
+
+  group('BeadModel State Transitions', () {
+    test('should allow valid state transitions', () {
+      final bead = BeadModel(type: BeadType.earthly, value: 1);
+
+      // From inactive to moving
+      expect(bead.canTransitionTo(BeadPosition.moving), true);
+      bead.setPosition(BeadPosition.moving);
+      expect(bead.position, BeadPosition.moving);
+
+      // From moving to active
+      expect(bead.canTransitionTo(BeadPosition.active), true);
+      bead.setPosition(BeadPosition.active);
+      expect(bead.position, BeadPosition.active);
+
+      // From active to moving
+      expect(bead.canTransitionTo(BeadPosition.moving), true);
+      bead.setPosition(BeadPosition.moving);
+      expect(bead.position, BeadPosition.moving);
+
+      // From moving to inactive
+      expect(bead.canTransitionTo(BeadPosition.inactive), true);
+      bead.setPosition(BeadPosition.inactive);
+      expect(bead.position, BeadPosition.inactive);
+    });
+
+    test('should allow direct transitions between active and inactive', () {
+      final bead = BeadModel(type: BeadType.earthly, value: 1);
+
+      // From inactive to active
+      expect(bead.canTransitionTo(BeadPosition.active), true);
+      bead.setPosition(BeadPosition.active);
+      expect(bead.position, BeadPosition.active);
+
+      // From active to inactive
+      expect(bead.canTransitionTo(BeadPosition.inactive), true);
+      bead.setPosition(BeadPosition.inactive);
+      expect(bead.position, BeadPosition.inactive);
+    });
+
+    test('should allow same state transitions', () {
+      final bead = BeadModel(type: BeadType.earthly, value: 1);
+
+      // Same state should always be valid
+      expect(bead.canTransitionTo(BeadPosition.inactive), true);
+      bead.setPosition(BeadPosition.inactive);
+      expect(bead.position, BeadPosition.inactive);
+    });
+
+    test('should validate all transition combinations', () {
+      final bead = BeadModel(type: BeadType.earthly, value: 1);
+
+      // Test all valid transitions from each state
+      final validTransitions = {
+        BeadPosition.inactive: [BeadPosition.inactive, BeadPosition.moving, BeadPosition.active],
+        BeadPosition.active: [BeadPosition.active, BeadPosition.moving, BeadPosition.inactive],
+        BeadPosition.moving: [BeadPosition.moving, BeadPosition.active, BeadPosition.inactive],
+      };
+
+      for (final fromState in BeadPosition.values) {
+        bead.setPosition(fromState);
+        for (final toState in BeadPosition.values) {
+          final shouldBeValid = validTransitions[fromState]!.contains(toState);
+          expect(bead.canTransitionTo(toState), shouldBeValid, reason: 'Transition from $fromState to $toState should be ${shouldBeValid ? 'valid' : 'invalid'}');
+        }
+      }
+    });
+  });
+
+  group('InvalidBeadTransitionException', () {
+    test('should have correct properties', () {
+      const exception = InvalidBeadTransitionException('Test message', BeadPosition.inactive, BeadPosition.moving);
+
+      expect(exception.message, 'Test message');
+      expect(exception.fromState, BeadPosition.inactive);
+      expect(exception.toState, BeadPosition.moving);
+    });
+
+    test('should have meaningful toString', () {
+      const exception = InvalidBeadTransitionException('Test message', BeadPosition.inactive, BeadPosition.moving);
+
+      final string = exception.toString();
+      expect(string, contains('InvalidBeadTransitionException'));
+      expect(string, contains('Test message'));
+      expect(string, contains('inactive'));
+      expect(string, contains('moving'));
     });
   });
 

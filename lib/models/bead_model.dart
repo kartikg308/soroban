@@ -13,6 +13,18 @@ enum BeadPosition {
   moving, // Currently being dragged
 }
 
+/// Exception thrown when an invalid bead state transition is attempted
+class InvalidBeadTransitionException implements Exception {
+  final String message;
+  final BeadPosition fromState;
+  final BeadPosition toState;
+
+  const InvalidBeadTransitionException(this.message, this.fromState, this.toState);
+
+  @override
+  String toString() => 'InvalidBeadTransitionException: $message (from $fromState to $toState)';
+}
+
 /// Model representing an individual bead in the soroban
 class BeadModel {
   final BeadType type;
@@ -38,9 +50,41 @@ class BeadModel {
   /// Checks if the bead is currently being moved
   bool get isMoving => _position == BeadPosition.moving;
 
-  /// Sets the position state of the bead
+  /// Sets the position state of the bead with validation
   void setPosition(BeadPosition newPosition) {
+    if (!_isValidTransition(_position, newPosition)) {
+      throw InvalidBeadTransitionException('Invalid transition from $_position to $newPosition', _position, newPosition);
+    }
     _position = newPosition;
+  }
+
+  /// Sets the position state of the bead without validation (for internal use)
+  void _setPositionUnchecked(BeadPosition newPosition) {
+    _position = newPosition;
+  }
+
+  /// Validates if a state transition is allowed
+  bool _isValidTransition(BeadPosition from, BeadPosition to) {
+    // Same state is always valid
+    if (from == to) return true;
+
+    // Define valid transitions
+    switch (from) {
+      case BeadPosition.inactive:
+        // From inactive, can go to moving or active
+        return to == BeadPosition.moving || to == BeadPosition.active;
+      case BeadPosition.active:
+        // From active, can go to moving or inactive
+        return to == BeadPosition.moving || to == BeadPosition.inactive;
+      case BeadPosition.moving:
+        // From moving, can go to active or inactive
+        return to == BeadPosition.active || to == BeadPosition.inactive;
+    }
+  }
+
+  /// Checks if a transition to the given position is valid
+  bool canTransitionTo(BeadPosition newPosition) {
+    return _isValidTransition(_position, newPosition);
   }
 
   /// Updates the current offset position of the bead
@@ -57,6 +101,14 @@ class BeadModel {
   BeadModel copyWith({BeadType? type, int? value, BeadPosition? position, Offset? currentOffset, AnimationController? animationController}) {
     final copy = BeadModel(type: type ?? this.type, value: value ?? this.value, position: position ?? _position, currentOffset: currentOffset ?? _currentOffset);
     copy.setAnimationController(animationController ?? _animationController);
+    return copy;
+  }
+
+  /// Creates a copy with a new position, bypassing validation (for internal use)
+  BeadModel _copyWithPositionUnchecked(BeadPosition position) {
+    final copy = BeadModel(type: type, value: value, position: _position, currentOffset: _currentOffset);
+    copy._setPositionUnchecked(position);
+    copy.setAnimationController(_animationController);
     return copy;
   }
 
